@@ -67,6 +67,7 @@ class FinnClient
 			$property->published = (string)$entry->published;
 		  
 		    $links = array();
+
             foreach ($entry->link as $link) {
                 $rel = $link->attributes()->rel;
                 $ref = $link->attributes()->href;
@@ -77,13 +78,14 @@ class FinnClient
 			$isPrivate = "false";
 			$status = "";
 			$adType = "";
+
 			foreach ($entry->category as $category) {
 			  if ($category->attributes()->scheme =="urn:finn:ad:private"){
 				$isPrivate = $category->attributes()->term;
 			  }
 			  //if disposed == true, show the label
 			  if ($category->attributes()->scheme =="urn:finn:ad:disposed"){
-				if($entry->category->attributes()->term == "true"){
+				if($category->attributes()->term == "true"){
 				  $status = $category->attributes()->label;
 				}
 			  }
@@ -106,6 +108,7 @@ class FinnClient
 			$work = null;
 			$mobile = null;
 			$fax = null;
+
 			foreach($entry->children($ns['finn'])->contact as $contact) {
 				$name = (string) $contact->children()->name;
 				$title = (string) $contact->attributes()->title;
@@ -219,10 +222,6 @@ class FinnClient
 			$property->usableSize = (string)$usableSize;
 			$property->primarySize = (string)$primarySize;
 		
-			
-			
-		
-		
 			$mainPrice = "";
 			$totalPrice = "";
 			$collectiveDebt = "";
@@ -307,8 +306,6 @@ class FinnClient
 		
 		return $resultset;
 	}
-	
-
 }
 
 ?>
