@@ -67,6 +67,7 @@ class FinnClient
 			$property->published = (string)$entry->published;
 		  
 		    $links = array();
+
             foreach ($entry->link as $link) {
                 $rel = $link->attributes()->rel;
                 $ref = $link->attributes()->href;
@@ -77,13 +78,14 @@ class FinnClient
 			$isPrivate = "false";
 			$status = "";
 			$adType = "";
+
 			foreach ($entry->category as $category) {
 			  if ($category->attributes()->scheme =="urn:finn:ad:private"){
 				$isPrivate = $category->attributes()->term;
 			  }
 			  //if disposed == true, show the label
 			  if ($category->attributes()->scheme =="urn:finn:ad:disposed"){
-				if($entry->category->attributes()->term == "true"){
+				if($category->attributes()->term == "true"){
 				  $status = $category->attributes()->label;
 				}
 			  }
@@ -103,6 +105,10 @@ class FinnClient
 			$property->postalCode = (string)$location->children($ns['finn'])->{'postal-code'};
 			
 			$contacts = array();
+			$work = null;
+			$mobile = null;
+			$fax = null;
+
 			foreach($entry->children($ns['finn'])->contact as $contact) {
 				$name = (string) $contact->children()->name;
 				$title = (string) $contact->attributes()->title;
@@ -148,6 +154,10 @@ class FinnClient
 			$ownershipType = "";
 			$usableSize = "";
 			$primarySize = "";
+			$ingress = "";
+			$situation = "";
+			$facilities = array();
+			$generalText = array();
 			foreach ($adata->children($ns['finn'])->field as $field) {
 				if ($field->attributes()->name == 'no_of_bedrooms') {
 					$numberOfBedrooms = $field->attributes()->value;
@@ -170,8 +180,40 @@ class FinnClient
 						$livingSizeTo = $sizeField->attributes()->to;
 					}
 				}
+				
+				if($field->attributes()->name == 'facilities') {
+					foreach($field->children($ns['finn'])->value as $facility) {
+						$facilities[] = (string)$facility;
+					}
+				}
+				
+				if($field->attributes()->name == 'general_text') {
+					$i = 0;
+					foreach($field->children($ns['finn'])->value as $text) {
+						
+						foreach($text->children($ns['finn'])->field as $t) {
+							if($t->attributes()->name == "title") {
+								$generalText[$i]['title'] = (string)$t->attributes()->value;
+							}
+							if($t->attributes()->name == "value") {
+								$generalText[$i]['value'] = (string)$t;
+							}
+						}
+						$i++;
+					}
+				}
+				if($field->attributes()->name == 'ingress') {
+					$ingress = (string)$field;
+				}
+				if($field->attributes()->name == 'situation') {
+					$situation = (string)$field;
+				}
 			}
-			
+
+			$property->ingress = $ingress;
+			$property->situation = $situation;
+			$property->facilities = $facilities;
+			$property->generalText = $generalText;
 			$property->livingSizeFrom = (string)$livingSizeFrom;
 			$property->livingSizeTo = (string)$livingSizeTo;
 			$property->propertyType = (string)$propertyType;
@@ -186,9 +228,13 @@ class FinnClient
 			$sharedCost = "";
 			$estimatedValue = "";
 			$sqmPrice = "";
+			$mainPriceFrom = "";
+			$mainPriceTo = "";
 			foreach ($adata->children($ns['finn'])->price as $price) {
 				if ($price->attributes()->name == 'main') {
 					$mainPrice = $price->attributes()->value;
+					$mainPriceFrom = $price->attributes()->from;
+					$mainPriceTo = $price->attributes()->to;
 				}
 				if ($price->attributes()->name == 'total') {
 					$totalPrice = $price->attributes()->value;
@@ -207,12 +253,16 @@ class FinnClient
 				}
 			}
 			$property->mainPrice = (string)$mainPrice;
+			$property->mainPriceFrom = (string)$mainPriceFrom;
+			$property->mainPriceTo = (string)$mainPriceTo;
 			$property->totalPrice = (string)$totalPrice;
 			$property->collectiveDebt = (string)$collectiveDebt;
 			$property->sharedCost = (string)$sharedCost;
 			$property->estimatedValue = (string)$estimatedValue;
 			$property->sqmPrice = (string)$sqmPrice;
+			
 		
+			
             return $property;
 	}
 	
@@ -256,8 +306,6 @@ class FinnClient
 		
 		return $resultset;
 	}
-	
-
 }
 
 ?>
