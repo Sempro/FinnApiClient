@@ -8,16 +8,16 @@ class FinnClient
 {
 	private $restClient = null;
 	private $apiUrl = "https://cache.api.finn.no/iad/";
-	
+
 	/*
 	*	Constructor
-	*	@param $restClient: A restclient implementing ClientInterface 
+	*	@param $restClient: A restclient implementing ClientInterface
 	*/
 	public function __construct(ClientInterface $restClient)
 	{
 		$this->restClient = $restClient;
 	}
-	
+
 	/*
 	*	Do a search for properties
 	*	@param $type: finn realestate type "realestate-homes"
@@ -32,7 +32,26 @@ class FinnClient
 		$resultSet = $this->parseResultset($rawData);
 		return $resultSet;
 	}
-	
+
+    /**
+     * Get a single object based on url
+     * @param $url The API url for the given object
+     * @return Property Returns a Property object
+     */
+    public function getObjectByUrl($url)
+    {
+        $rawData = $this->restClient->send($url);
+
+        if (isset($rawData)) {
+            $entry = new \SimpleXMLElement($rawData);
+            $ns = $entry->getNamespaces(true);
+
+            $resultSet = $this->parseEntry($entry, $ns);
+
+            return $resultSet;
+        }
+    }
+
 	/*
 	*	Get single object with finncode
 	*   @param $type: finn realestate type "realestate-homes"
@@ -42,30 +61,26 @@ class FinnClient
 	{
 		$url = $this->apiUrl.'ad/'.$type.'/'.$finncode;
 		$rawData = $this->restClient->send($url);
-		
+
 		//parse dataene til array med objekter
 		if(isset($rawData)){
 			$entry = new \SimpleXMLElement($rawData);
 			$ns = $entry->getNamespaces(true);
-	
+
 			$resultSet = $this->parseEntry($entry, $ns);
 			return $resultSet;
 		}
 	}
-	
-	/*
-	*
-	*
-	*/
+
 	private function parseEntry($entry, $ns)
-	{		
+	{
 		$property = new Property();
-			
+
 			$property->id = (string)$entry->children($ns['dc'])->identifier;
 			$property->title = (string)$entry->title;
 			$property->updated = (string)$entry->updated;
 			$property->published = (string)$entry->published;
-		  
+
 		    $links = array();
 
             foreach ($entry->link as $link) {
@@ -74,7 +89,7 @@ class FinnClient
                 $links["$rel"] = "$ref";
             }
             $property->links = $links;
-		  
+
 			$isPrivate = "false";
 			$status = "";
 			$adType = "";
@@ -93,17 +108,17 @@ class FinnClient
 				$adType = $category->attributes()->label;
 			  }
 			}
-			
+
 			$property->isPrivate = (string)$isPrivate;
 			$property->status = (string)$status;
 			$property->adType = (string)$adType;
-			
+
 			$property->georss = (string)$entry->children($ns['georss'])->point;
 			$location = $entry->children($ns['finn'])->location;
 			$property->city = (string)$location->children($ns['finn'])->city;
 			$property->address = (string)$location->children($ns['finn'])->address;
 			$property->postalCode = (string)$location->children($ns['finn'])->{'postal-code'};
-			
+
 			$contacts = array();
 			$work = null;
 			$mobile = null;
@@ -134,7 +149,7 @@ class FinnClient
 				));
 			}
 			$property->contacts = $contacts;
-			
+
 			$img = array();
 			if ($entry->children($ns['media']) && $entry->children($ns['media'])->content->attributes()) {
 				//$img = $entry->children($ns['media'])->content->attributes();
@@ -143,9 +158,9 @@ class FinnClient
 				}
 			}
 			$property->img = $img;
-		
+
 			$property->author = (string)$entry->author->name;
-		
+
 			$adata = $entry->children($ns['finn'])->adata;
 			$livingSizeFrom = 0;
 			$livingSizeTo = 0;
@@ -180,17 +195,17 @@ class FinnClient
 						$livingSizeTo = $sizeField->attributes()->to;
 					}
 				}
-				
+
 				if($field->attributes()->name == 'facilities') {
 					foreach($field->children($ns['finn'])->value as $facility) {
 						$facilities[] = (string)$facility;
 					}
 				}
-				
+
 				if($field->attributes()->name == 'general_text') {
 					$i = 0;
 					foreach($field->children($ns['finn'])->value as $text) {
-						
+
 						foreach($text->children($ns['finn'])->field as $t) {
 							if($t->attributes()->name == "title") {
 								$generalText[$i]['title'] = (string)$t->attributes()->value;
@@ -221,7 +236,7 @@ class FinnClient
 			$property->ownershipType = (string)$ownershipType;
 			$property->usableSize = (string)$usableSize;
 			$property->primarySize = (string)$primarySize;
-		
+
 			$mainPrice = "";
 			$totalPrice = "";
 			$collectiveDebt = "";
@@ -260,26 +275,26 @@ class FinnClient
 			$property->sharedCost = (string)$sharedCost;
 			$property->estimatedValue = (string)$estimatedValue;
 			$property->sqmPrice = (string)$sqmPrice;
-			
-		
-			
+
+
+
             return $property;
 	}
-	
+
 	//Returns an array of objects
 	private function parseResultset($rawData)
     {
 		$resultset = new Resultset();
-		
+
 		//parse the xml and get namespaces (needed later to extract attributes and values)
 		$xmlData = new \SimpleXMLElement($rawData);
 		$ns = $xmlData->getNamespaces(true);
-		
+
 		//search data:
 		$resultset->title = (string)$xmlData->title;
 		$resultset->subtitle = (string)$xmlData->subtitle;
 		//$resultset->totalResults = (string)$xmlData->children($ns['os'])->totalResults;
-		
+
 		//navigation links
 		$links = array();
 		foreach ($xmlData->link as $link) {
@@ -287,23 +302,23 @@ class FinnClient
 			$ref = $link->attributes()->href;
 			$links["$rel"] = "$ref";
 		}
-		$resultset->links = $links;		
+		$resultset->links = $links;
 		//entry data
-		
+
 		//get each entry for simpler syntax when looping through them later
 		$entries = array();
 		foreach ($xmlData->entry as $entry) {
 			array_push($entries, $entry);
 		}
-		
-		$propertyList = array();		
-		foreach ($entries as $entry) {	
+
+		$propertyList = array();
+		foreach ($entries as $entry) {
 			$property = $this->parseEntry($entry, $ns);
 			$propertyList[] = $property;
 		}
-		
+
 		$resultset->results = $propertyList;
-		
+
 		return $resultset;
 	}
 }
