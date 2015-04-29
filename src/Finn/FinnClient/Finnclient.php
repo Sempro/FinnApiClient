@@ -120,9 +120,9 @@ class FinnClient
 			$property->postalCode = (string)$location->children($ns['finn'])->{'postal-code'};
 
 			$contacts = array();
-			$work = null;
-			$mobile = null;
-			$fax = null;
+			$work = '';
+			$mobile = '';
+			$fax = '';
 
 			foreach($entry->children($ns['finn'])->contact as $contact) {
 				$name = (string) $contact->children()->name;
