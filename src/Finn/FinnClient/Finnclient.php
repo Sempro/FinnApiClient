@@ -123,12 +123,16 @@ class FinnClient
         $property->postalCode = (string)$location->children($ns['finn'])->{'postal-code'};
 
         $contacts = array();
+        $email = '';
         $work = '';
         $mobile = '';
         $fax = '';
 
         foreach ($entry->children($ns['finn'])->contact as $contact) {
             $name = (string)$contact->children()->name;
+            if ($contact->children()->email) {
+                $email = (string)$contact->children()->email;
+            }
             $title = (string)$contact->attributes()->title;
             foreach ($contact->{'phone-number'} as $numbers) {
                 switch ($numbers->attributes()) {
@@ -145,6 +149,7 @@ class FinnClient
             }
             array_push($contacts, array(
                 'name' => $name,
+                'email' => $email,
                 'title' => $title,
                 'work' => $work,
                 'mobile' => $mobile,
