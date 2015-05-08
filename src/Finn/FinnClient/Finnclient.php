@@ -154,10 +154,14 @@ class FinnClient
         $property->contacts = $contacts;
 
         $img = array();
+        $imgIndex = 0;
         if ($entry->children($ns['media']) && $entry->children($ns['media'])->content->attributes()) {
             //$img = $entry->children($ns['media'])->content->attributes();
             foreach ($entry->children($ns['media'])->content as $content) {
-                $img[] = current($content->attributes());
+                $img[$imgIndex] = current($content->attributes());
+                $img[$imgIndex]['description'] = (string) $content->description;
+
+                $imgIndex++;
             }
         }
         $property->img = $img;
