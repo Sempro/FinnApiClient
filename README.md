@@ -9,7 +9,7 @@ Add this to your projects composer.json file
 "repositories": [
 	{
 		"type": "vcs",
-		"url": "https://github.com/luhmor/FinnApiClient"
+		"url": "https://github.com/Sempro/FinnApiClient"
 	}
 ],
 "require": {
